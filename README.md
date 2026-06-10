@@ -1,246 +1,59 @@
-# 🚀 Antigravity Sales Intelligence Pipeline
+Antigravity Sales Command Center
 
-An end-to-end data engineering and AI analytics project that generates synthetic sales data for a fictional antigravity technology company, cleans it through a robust pipeline, runs analytical SQL queries, and surfaces executive-level insights via a Streamlit dashboard powered by Google Gemini AI.
+This is a full-stack data engineering and analytics dashboard I built from scratch. The goal of this project was to practice building an end-to-end data pipeline and integrating LLMs for automated data analysis, without relying on pre-cleaned Kaggle datasets.
 
-![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.41-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
-![DuckDB](https://img.shields.io/badge/DuckDB-1.4-FEF000?style=for-the-badge&logo=duckdb&logoColor=black)
-![Gemini](https://img.shields.io/badge/Gemini_AI-2.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)
+I went with an "antigravity tech" theme for the dummy data just to make it more interesting than standard retail data.
 
----
+Tech Stack
 
-## 📋 Table of Contents
+Data Generation & Cleaning: Python, Pandas, Numpy, Faker
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Project Structure](#project-structure)
-- [Setup & Installation](#setup--installation)
-- [Usage](#usage)
-- [Pipeline Phases](#pipeline-phases)
-- [Dashboard Features](#dashboard-features)
-- [Tech Stack](#tech-stack)
-- [License](#license)
+Analytics / OLAP: DuckDB (runs directly on local CSVs)
 
----
+Frontend Dashboard: Streamlit, Plotly
 
-## Overview
+AI Agent: Google GenAI SDK (Gemini 2.5 Flash)
 
-This project demonstrates a production-style data pipeline built entirely in Python:
+Project Architecture
 
-1. **Generate** realistic synthetic sales data with intentional anomalies
-2. **Clean** the data using deduplication, outlier detection (IQR), and validation
-3. **Analyze** with SQL queries (window functions, funnels, cohort analysis)
-4. **Visualize** through an interactive Streamlit dashboard
-5. **Augment** with AI-generated executive insights via Google Gemini
+The project is broken down into a sequential pipeline:
 
-The fictional company — **Antigravity Corp** — sells 10 sci-fi products like Quantum Levitators, Zero-G Boots, and Anti-Mass Generators across 4 regions and 3 acquisition channels.
+generate_data.py - Synthesizes 12 weeks of raw, messy sales data. Deliberately introduces duplicates, negative quantities, and extreme price outliers.
 
----
+clean_data.py - A Pandas script that deduplicates rows, handles the negative values, and uses the IQR (Interquartile Range) method to detect and cap price outliers. Outputs cleaned_*.csv files.
 
-## Architecture
+analytics.py / insight_engine.py - Backend logic testing DuckDB queries to calculate WoW revenue growth, AOV, and funnel drop-offs, then passing the results to the Gemini API for natural language insights.
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  generate_data   │────▶│   clean_data     │────▶│  analyze_data   │
-│    (Phase 1)     │     │    (Phase 2)     │     │    (Phase 3)    │
-│                  │     │                  │     │                 │
-│ • Faker + NumPy  │     │ • Deduplication  │     │ • DuckDB SQL    │
-│ • 5,100+ orders  │     │ • IQR outliers   │     │ • Window funcs  │
-│ • 3 anomaly types│     │ • Validation     │     │ • Funnel + KPIs │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                         │
-                         ┌─────────────────┐             │
-                         │ insight_engine   │◀────────────┘
-                         │    (Phase 4)     │
-                         │                 │
-                         │ • Gemini 2.5    │
-                         │ • CLI insights  │
-                         └────────┬────────┘
-                                  │
-                         ┌────────▼────────┐
-                         │     app.py       │
-                         │    (Phase 5)     │
-                         │                 │
-                         │ • Streamlit UI  │
-                         │ • Plotly charts │
-                         │ • Live filters  │
-                         │ • AI on-demand  │
-                         └─────────────────┘
-```
+app.py - The main Streamlit application that ties the SQL queries, UI filters, charts, and AI insight generation together.
 
----
+How to Run It Locally
 
-## Project Structure
+Install dependencies:
 
-```
-antigravity-sales-pipeline/
-├── generate_data.py       # Phase 1: Synthetic data generator (with anomalies)
-├── clean_data.py          # Phase 2: Data cleaning & outlier handling pipeline
-├── analyze_data.py        # Phase 3: DuckDB analytical SQL queries
-├── insight_engine.py      # Phase 4: CLI-based Gemini AI insight engine
-├── app.py                 # Phase 5: Streamlit dashboard (full UI)
-├── requirements.txt       # Pinned Python dependencies
-├── .gitignore             # Git ignore rules
-├── LICENSE                # MIT License
-└── README.md              # This file
-```
-
-> **Note:** CSV data files are generated by the scripts and excluded from version control via `.gitignore`.
-
----
-
-## Setup & Installation
-
-### Prerequisites
-
-- Python 3.9 or higher
-- A [Google Gemini API key](https://aistudio.google.com/apikey) (free tier works)
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/your-username/antigravity-sales-pipeline.git
-cd antigravity-sales-pipeline
-```
-
-### 2. Create a virtual environment (recommended)
-
-```bash
-python -m venv venv
-
-# Windows (PowerShell)
-.\venv\Scripts\Activate.ps1
-
-# macOS / Linux
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
 pip install -r requirements.txt
-```
 
-### 4. Set your Gemini API key
 
-```powershell
-# PowerShell
-$env:GEMINI_API_KEY="your_api_key_here"
-```
+Generate and clean the data:
+You need to build the local database files first.
 
-```bash
-# macOS / Linux
-export GEMINI_API_KEY="your_api_key_here"
-```
-
----
-
-## Usage
-
-Run the pipeline phases sequentially:
-
-```bash
-# Phase 1: Generate synthetic data (creates users.csv, products.csv, orders.csv)
 python generate_data.py
-
-# Phase 2: Clean the data (creates cleaned_*.csv files)
 python clean_data.py
 
-# Phase 3: Run analytical SQL queries (prints results to terminal)
-python analyze_data.py
 
-# Phase 4: Get AI insight from CLI (optional, requires GEMINI_API_KEY)
-python insight_engine.py
+Set your API Key:
+The AI insight engine requires a free Google Gemini API key. Set it in your terminal before running the app.
 
-# Phase 5: Launch the interactive dashboard
+Mac/Linux: export GEMINI_API_KEY="your_api_key_here"
+
+Windows CMD: set GEMINI_API_KEY="your_api_key_here"
+
+Launch the app:
+
 streamlit run app.py
-```
 
-The dashboard will open at **http://localhost:8501**.
 
----
+Known Issues / Next Steps
 
-## Pipeline Phases
+Right now, DuckDB runs queries directly against the CSVs. It's fast enough for 5,000 rows, but if I scale the data generation script up, I should probably convert the storage format to Parquet.
 
-### Phase 1 — Data Generation (`generate_data.py`)
-
-Generates 3 relational CSV files spanning the last 12 weeks:
-
-| File | Rows | Description |
-|---|---|---|
-| `users.csv` | 800 | user_id, name, email, signup_date, region, channel |
-| `products.csv` | 10 | product_id, product_name, base_price |
-| `orders.csv` | 5,100+ | order_id, user_id, product_id, order_date, quantity, order_stage |
-
-**Intentional anomalies injected:**
-- ~1% duplicate `order_id` rows
-- Random negative quantities (-5 to -1)
-- One extreme price outlier ($179.99 → $150,000)
-
-### Phase 2 — Data Cleaning (`clean_data.py`)
-
-| Step | Action | Method |
-|---|---|---|
-| 1 | Deduplicate orders | Drop on `order_id`, keep first |
-| 2 | Fix negative quantities | Convert to absolute value |
-| 3 | Detect price outliers | IQR method (Q3 + 1.5×IQR) |
-| 4 | Validate data types | datetime parsing, referential integrity |
-
-### Phase 3 — SQL Analytics (`analyze_data.py`)
-
-Three DuckDB queries executed directly on CSV files:
-1. **Weekly KPIs** — Revenue, AOV, orders with `LAG()` for WoW growth
-2. **Conversion Funnel** — Stage-by-stage drop-off with `FIRST_VALUE()`
-3. **Checkout Bottleneck** — Worst region × channel drop-off rates
-
-### Phase 4 — AI Insight Engine (`insight_engine.py`)
-
-CLI tool that sends checkout drop-off data to Gemini 2.5 Flash for executive-level analysis. Features retry with exponential backoff and model cascade fallback.
-
-### Phase 5 — Dashboard (`app.py`)
-
-Interactive Streamlit application with:
-- Sidebar filters (Region, Channel)
-- KPI cards with gradient styling
-- Plotly charts (area chart + funnel)
-- On-demand Gemini AI insights
-
----
-
-## Dashboard Features
-
-| Feature | Description |
-|---|---|
-| **Dynamic Filters** | Multiselect for Region & Channel — all visuals update instantly |
-| **KPI Cards** | Total Revenue, AOV, Total Orders with gradient styling |
-| **Weekly Revenue Chart** | Plotly area chart with hover tooltips |
-| **Conversion Funnel** | 4-stage funnel (Visited → Purchased) |
-| **AI Analyst** | On-demand Gemini insight with retry logic |
-| **Premium Theme** | Custom CSS with Inter font, glassmorphic cards |
-
----
-
-## Tech Stack
-
-| Technology | Purpose |
-|---|---|
-| **Python 3.9+** | Core language |
-| **Pandas** | DataFrames & data manipulation |
-| **NumPy** | Numerical operations |
-| **Faker** | Synthetic data generation |
-| **DuckDB** | In-process SQL engine (zero config) |
-| **Plotly** | Interactive charts |
-| **Streamlit** | Web dashboard framework |
-| **Google GenAI** | Gemini 2.5 Flash LLM integration |
-
----
-
-## License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
-
-<p align="center">
-  Built with ☕ and antigravity.
-</p>
+The UI filters trigger a re-run of the whole Streamlit script. I might implement @st.cache_data on the DuckDB connection later to optimize the load times.
